@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request
@@ -17,10 +18,10 @@ async def vapi_webhook(request: Request):
     Handle VAPI server-url webhook events.
 
     VAPI sends different message types:
-    - function-call: Assistant wants to invoke a tool
+    - tool-calls: Assistant wants to invoke one or more tools
+    - function-call: Legacy format for tool invocation
     - end-of-call-report: Call has ended, includes transcript + summary
     - status-update: Call status changes
-    - assistant-request: Dynamic assistant config (not used here)
     """
     body = await request.json()
     message = body.get("message", {})
@@ -28,7 +29,9 @@ async def vapi_webhook(request: Request):
 
     logger.info(f"VAPI webhook received: type={msg_type}")
 
-    if msg_type == "function-call":
+    if msg_type == "tool-calls":
+        return await handle_tool_calls(message)
+    elif msg_type == "function-call":
         return await handle_function_call(message)
     elif msg_type == "end-of-call-report":
         return await handle_end_of_call(message)
@@ -38,8 +41,44 @@ async def vapi_webhook(request: Request):
     return {"ok": True}
 
 
+async def handle_tool_calls(message: dict) -> dict:
+    """Handle VAPI tool-calls format (current API version)."""
+    tool_calls = message.get("toolCallList", [])
+    call_id = message.get("call", {}).get("id", "unknown")
+
+    results = []
+    for tool_call in tool_calls:
+        tc_id = tool_call.get("id", "")
+        fn = tool_call.get("function", {})
+        fn_name = fn.get("name", "")
+        fn_args = fn.get("arguments", {})
+
+        logger.info(f"Tool call: {fn_name} with args: {fn_args} (call={call_id})")
+
+        if fn_name == "lookup_caller":
+            result = handle_lookup_caller(fn_args, call_id)
+        elif fn_name == "log_interaction":
+            result = handle_log_interaction(fn_args, call_id)
+        else:
+            logger.warning(f"Unknown function: {fn_name}")
+            result = f"Unknown function: {fn_name}"
+
+        # Extract the result string if it came from our handlers
+        if isinstance(result, dict) and "results" in result:
+            result_str = result["results"][0]["result"]
+        else:
+            result_str = str(result)
+
+        results.append({
+            "toolCallId": tc_id,
+            "result": result_str,
+        })
+
+    return {"results": results}
+
+
 async def handle_function_call(message: dict) -> dict:
-    """Route function calls to the appropriate handler."""
+    """Handle legacy function-call format."""
     fn_name = message.get("functionCall", {}).get("name", "")
     fn_args = message.get("functionCall", {}).get("parameters", {})
     call_id = message.get("call", {}).get("id", "unknown")
@@ -62,10 +101,11 @@ def handle_lookup_caller(args: dict, call_id: str) -> dict:
     if not phone:
         return {"results": [{"result": "No phone number provided. Please ask the caller for their phone number."}]}
 
+    logger.info(f"Looking up phone: '{phone}' (normalized: '{''.join(c for c in phone if c.isdigit())}')")
+
     caller = lookup_caller(phone)
 
     if caller is None:
-        # Track that this call had a failed lookup
         _call_state[call_id] = {"authenticated": False, "phone": phone}
         return {
             "results": [
@@ -79,9 +119,8 @@ def handle_lookup_caller(args: dict, call_id: str) -> dict:
             ]
         }
 
-    # Track successful lookup
     _call_state[call_id] = {
-        "authenticated": False,  # Will be set to True after identity confirmation
+        "authenticated": False,
         "phone": phone,
         "caller_name": f"{caller.first_name} {caller.last_name}",
     }
@@ -111,7 +150,6 @@ def handle_log_interaction(args: dict, call_id: str) -> dict:
     except ValueError:
         sentiment = Sentiment.neutral
 
-    # Get call state for additional context
     state = _call_state.pop(call_id, {})
     phone = state.get("phone", "")
     authenticated = state.get("authenticated", False)
@@ -134,13 +172,11 @@ async def handle_end_of_call(message: dict) -> dict:
     """
     call_id = message.get("call", {}).get("id", "unknown")
 
-    # If state still exists, the assistant didn't log the interaction itself
     state = _call_state.pop(call_id, None)
     if state is not None:
         caller_name = state.get("caller_name", "Unknown Caller")
         phone = state.get("phone", "")
 
-        # Extract summary from the end-of-call report
         summary = message.get("summary", "Call ended without summary.")
         ended_reason = message.get("endedReason", "unknown")
 
