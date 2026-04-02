@@ -165,7 +165,8 @@ def handle_log_interaction(args: dict, call_id: str) -> dict:
 
     state = _call_state.pop(call_id, {})
     phone = state.get("phone", "")
-    authenticated = state.get("authenticated", False)
+    # Prefer authenticated flag from LLM (it knows if identity was confirmed)
+    authenticated = args.get("authenticated", state.get("authenticated", False))
 
     record_id = log_interaction(
         caller_name=caller_name,
