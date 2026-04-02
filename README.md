@@ -1,6 +1,15 @@
 # Observe Insurance — AI Claims Support Voice Agent
 
-A VoiceAI agent that handles inbound customer calls for insurance claim status checks. Built with **VAPI**, **GPT-5-mini**, **FastAPI**, and **Airtable**.
+A VoiceAI agent that handles inbound customer calls for insurance claim status checks. Built with **VAPI**, **GPT-4o-mini**, **FastAPI**, and **Airtable**.
+
+## Live Demo
+
+**Call: +1 (830) 457-9298** — the agent is live 24/7 on Render.
+
+- **Happy path**: Say your number is "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
+- **Error path**: Say your number is "555-999-0000" → not found → offers human callback
+
+> API Docs (Swagger): [observe-ai-take-home.onrender.com/docs](https://observe-ai-take-home.onrender.com/docs)
 
 ## What It Does
 
@@ -15,9 +24,9 @@ A caller dials in and the AI assistant:
 ## Architecture
 
 ```
-Caller → PSTN → VAPI (Deepgram STT → GPT-5-mini → ElevenLabs TTS)
-                         ↓ function calls
-                   FastAPI Webhook Server
+Caller → PSTN → VAPI (Deepgram STT → GPT-4o-mini → ElevenLabs TTS)
+                         ↓ tool calls
+                   FastAPI Webhook Server (Render)
                          ↓
                       Airtable
                   (Callers | Interactions)
@@ -40,12 +49,17 @@ See [docs/architecture.md](docs/architecture.md) for full system diagrams and [d
 │       └── schemas.py          # Pydantic models
 ├── vapi/
 │   └── agent_config.json       # VAPI assistant configuration
+├── tests/
+│   ├── test_webhook.py         # Webhook handler tests (11 tests)
+│   └── test_airtable.py        # Airtable service tests (6 tests)
 ├── docs/
 │   ├── architecture.md         # System architecture diagrams
 │   ├── conversation_flow.md    # Conversation flow chart
 │   └── technical_writeup.md    # Technical write-up
 ├── scripts/
 │   └── seed_airtable.py        # Seed sample caller data
+├── Dockerfile                  # Production container
+├── render.yaml                 # Render deployment config
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -54,15 +68,14 @@ See [docs/architecture.md](docs/architecture.md) for full system diagrams and [d
 ## Setup
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.12+
 - [VAPI account](https://vapi.ai) (free tier works)
 - [Airtable account](https://airtable.com) (free tier works)
-- [ngrok](https://ngrok.com) (for local development)
 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/observe-ai-take-home.git
+git clone https://github.com/MatthewTracy/observe-ai-take-home.git
 cd observe-ai-take-home
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
@@ -98,9 +111,7 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env with your actual keys:
-#   AIRTABLE_PAT=pat...
-#   AIRTABLE_BASE_ID=app...
+# Edit .env with your actual keys
 ```
 
 ### 4. Seed Sample Data
@@ -109,56 +120,79 @@ cp .env.example .env
 python -m scripts.seed_airtable
 ```
 
-This creates 6 sample callers with varied claim statuses.
-
 ### 5. Run the Server
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 6. Expose with ngrok
+### 6. Run Tests
 
 ```bash
-ngrok http 8000
+pytest tests/ -v
 ```
 
-Copy the ngrok URL (e.g., `https://abc123.ngrok.io`).
+### 7. Docker (Alternative)
 
-### 7. Configure VAPI
+```bash
+docker build -t observe-voice-agent .
+docker run -p 8000:8000 --env-file .env observe-voice-agent
+```
+
+### 8. Configure VAPI
 
 1. Go to [VAPI Dashboard](https://dashboard.vapi.ai)
 2. Create a new assistant using the config in `vapi/agent_config.json`
-3. Set the **Server URL** to `https://YOUR_NGROK_URL/vapi/webhook`
+3. Set the **Server URL** to your deployment URL + `/vapi/webhook`
 4. Assign a phone number to the assistant
 5. Call the number to test!
 
-## Demo Scenarios
+## Branching Workflows
 
 ### Happy Path
-Call with a known number (e.g., "555-123-4567" for Sarah Johnson):
-- Agent greets → asks for phone → looks up record → confirms identity → delivers "Approved" status → logs interaction
+```
+Greeting → Phone Number → Airtable Lookup (found) → "Am I speaking with Sarah Johnson?"
+→ Yes → "Your claim CLM-2024-001 has been approved..." → Anything else? → No
+→ Log interaction to Airtable → Goodbye
+```
 
-### Error Path
-Call with an unknown number (e.g., "555-999-0000"):
-- Agent greets → asks for phone → lookup fails → offers alternative number → offers human callback → logs interaction
+### Error Path: Phone Not Found
+```
+Greeting → Phone Number → Airtable Lookup (not found) → "Try another number?"
+→ No → "I'll arrange a human callback" → Log interaction → Goodbye
+```
+
+### Error Path: Identity Denied
+```
+Greeting → Phone Number → Airtable Lookup (found) → "Am I speaking with Sarah Johnson?"
+→ No → "Sorry for the confusion, I'll arrange a human representative" → Log interaction → Goodbye
+```
+
+### Emergency
+```
+At any point → Caller mentions emergency → "Please hang up and dial 911 immediately"
+```
 
 ## Deliverables
 
 | Deliverable | Location |
 |-------------|----------|
-| Working Voice Agent | VAPI + this webhook server |
+| Working Voice Agent | **+1 (830) 457-9298** (live) |
+| API Docs | [observe-ai-take-home.onrender.com/docs](https://observe-ai-take-home.onrender.com/docs) |
 | Conversation Flow Chart | [docs/conversation_flow.md](docs/conversation_flow.md) |
 | System Architecture Diagram | [docs/architecture.md](docs/architecture.md) |
 | Technical Write-Up | [docs/technical_writeup.md](docs/technical_writeup.md) |
+| Test Suite | `pytest tests/ -v` (17 tests) |
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Voice Platform | VAPI |
-| STT | Deepgram Nova-3 |
-| LLM | GPT-5-mini |
-| TTS | ElevenLabs |
-| Backend | Python + FastAPI |
-| Data Store | Airtable |
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| Voice Platform | VAPI | Managed STT/TTS/LLM orchestration with built-in telephony |
+| STT | Deepgram Nova-2 | Low-latency streaming transcription optimized for phone audio |
+| LLM | GPT-4o-mini | Fast inference, reliable function calling, cost-effective |
+| TTS | ElevenLabs | Natural, human-like voice synthesis |
+| Backend | Python + FastAPI | Async webhook server with auto-generated API docs |
+| Data Store | Airtable | Structured API + visual UI for reviewer access |
+| Deployment | Render | Auto-deploy from GitHub, free tier |
+| Testing | pytest | 17 tests covering happy paths, error paths, and edge cases |
