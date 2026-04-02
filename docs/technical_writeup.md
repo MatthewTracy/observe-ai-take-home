@@ -11,8 +11,8 @@ This solution uses a managed voice AI platform (VAPI) with a custom webhook back
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
 | **Voice Platform** | VAPI | Manages the entire voice pipeline (telephony, STT, LLM, TTS) as a single platform. Eliminates the need to build and maintain SIP handling, audio streaming, or turn-taking logic. Provides built-in phone number provisioning and sub-200ms voice latency. |
-| **STT** | Deepgram Nova-3 | Industry-leading accuracy for real-time transcription. Outperforms Whisper on phone audio quality (8kHz, background noise). Streaming mode enables the LLM to start processing before the caller finishes speaking. |
-| **LLM** | GPT-5-mini | GPT-5 class intelligence at mini-tier pricing ($0.25/MTok input). Excels at instruction following for our multi-step system prompt (auth flow, branching, FAQ, safety). Function calling is reliable for our two tools. Mini form factor provides the low latency critical for voice interactions. |
+| **STT** | Deepgram Nova-2 | Industry-leading accuracy for real-time transcription. Outperforms Whisper on phone audio quality (8kHz, background noise). Streaming mode enables the LLM to start processing before the caller finishes speaking. |
+| **LLM** | GPT-4o-mini | Optimized for low-latency voice interactions at $0.15/MTok input. Reliable function calling for our two tools (lookup + logging). Handles our multi-step system prompt (auth flow, branching, FAQ, safety) well. The mini form factor delivers the fast time-to-first-token critical for natural phone conversations. |
 | **TTS** | ElevenLabs | Most natural-sounding voice synthesis available. The "warmth" and "stability" controls let us dial in a calm, professional insurance support tone. Streaming output means the caller hears the first word within ~300ms of LLM completion. |
 | **Backend** | Python + FastAPI | Async-native, minimal boilerplate. Perfect for a webhook server that receives VAPI events and returns structured tool results. Pydantic models provide request/response validation. Easy to deploy on any platform. |
 | **Data Store** | Airtable | Provides both a structured API and a visual UI — reviewers can see the data without needing database tools. The pyairtable SDK handles auth and pagination. For production, this would migrate to PostgreSQL. |
@@ -25,8 +25,8 @@ A custom pipeline gives maximum control but requires managing: audio streaming, 
 **Why a webhook server over VAPI's built-in integrations?**
 VAPI offers native Airtable/Google Sheets connectors, but a custom webhook gives us: phone number normalization, fallback logging on call end, call state tracking, and structured error handling. This also demonstrates engineering capability — we're not just wiring no-code tools together.
 
-**Why GPT-5-mini over GPT-5.1 or Claude?**
-For voice, latency is king. GPT-5-mini delivers GPT-5-class reasoning at mini-tier speed. The system prompt is complex (multi-step auth, branching, FAQ, safety) but doesn't require frontier-level reasoning — it's structured instruction following, which mini models handle well. At $0.25/MTok input, it's also 5x cheaper than GPT-5.1, which matters at scale.
+**Why GPT-4o-mini over GPT-4o or Claude?**
+For voice, latency is king. GPT-4o-mini delivers fast time-to-first-token while maintaining strong instruction following. The system prompt is complex (multi-step auth, branching, FAQ, safety) but doesn't require frontier-level reasoning — it's structured instruction following, which mini models handle well. At $0.15/MTok input, it's significantly cheaper than GPT-4o ($2.50/MTok), which matters at scale when handling thousands of calls daily.
 
 ### Production Scaling Considerations
 
@@ -36,7 +36,7 @@ For voice, latency is king. GPT-5-mini delivers GPT-5-class reasoning at mini-ti
 | **Deployment** | Single instance on Railway | Kubernetes with auto-scaling webhook pods |
 | **Monitoring** | FastAPI logs + Airtable records | Datadog/Grafana dashboards, PagerDuty alerts |
 | **Phone Numbers** | 1 VAPI number | Multiple numbers with geographic routing |
-| **LLM** | GPT-5-mini | GPT-5-mini with GPT-5.1 fallback for complex calls |
+| **LLM** | GPT-4o-mini | GPT-4o-mini with GPT-4o fallback for complex calls |
 | **Caching** | None | Redis cache for frequent caller lookups |
 | **Security** | Basic | VAPI webhook signature verification, rate limiting, PII encryption at rest |
 
@@ -82,7 +82,7 @@ Callers speak phone numbers in varied formats that STT transcribes unpredictably
 
 3. **Regression test suite**: Build a set of 20+ synthetic conversations covering every branch (happy path, wrong number, identity denied, emergency, off-topic, FAQ variations) that run against the webhook server with mocked Airtable responses. This catches prompt regressions before they hit production.
 
-4. **Multi-language support**: Add Spanish language support with a language detection step in the greeting. Deepgram Nova-3 supports multilingual transcription, and the system prompt can be conditioned on detected language.
+4. **Multi-language support**: Add Spanish language support with a language detection step in the greeting. Deepgram Nova-2 supports multilingual transcription, and the system prompt can be conditioned on detected language.
 
 5. **Warm transfer**: Instead of just promising a callback, integrate with a telephony API to perform a warm transfer to a live agent queue, passing the call context so the agent doesn't have to re-verify.
 

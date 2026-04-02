@@ -10,8 +10,8 @@ flowchart LR
 
     subgraph VAPI["VAPI Platform"]
         B[Telephony<br/>SIP/PSTN Gateway]
-        C[Deepgram Nova-3<br/>STT]
-        D[GPT-5-mini<br/>LLM]
+        C[Deepgram Nova-2<br/>STT]
+        D[GPT-4o-mini<br/>LLM]
         E[ElevenLabs<br/>TTS]
         B --> C --> D --> E --> B
     end
@@ -35,7 +35,7 @@ flowchart LR
     end
 
     A <-->|Voice| B
-    D -->|"function-call"| F
+    D -->|"tool-calls"| F
     F --> G
     F --> H
     F --> I
@@ -58,8 +58,8 @@ flowchart LR
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
 | Telephony | VAPI SIP/PSTN | Receives inbound calls, manages phone numbers |
-| STT | Deepgram Nova-3 | Real-time speech-to-text with low latency |
-| LLM | GPT-5-mini | Conversation logic, tool calling, response generation |
+| STT | Deepgram Nova-2 | Real-time speech-to-text with low latency |
+| LLM | GPT-4o-mini | Conversation logic, tool calling, response generation |
 | TTS | ElevenLabs | Natural, human-like voice synthesis |
 
 ### Webhook Server (FastAPI)
@@ -91,7 +91,7 @@ flowchart LR
 sequenceDiagram
     participant Caller
     participant VAPI
-    participant LLM as GPT-5-mini
+    participant LLM as GPT-4o-mini
     participant Server as FastAPI
     participant DB as Airtable
 
@@ -122,7 +122,7 @@ sequenceDiagram
 sequenceDiagram
     participant Caller
     participant VAPI
-    participant LLM as GPT-5-mini
+    participant LLM as GPT-4o-mini
     participant Server as FastAPI
     participant DB as Airtable
 
