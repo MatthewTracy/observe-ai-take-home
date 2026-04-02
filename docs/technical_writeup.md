@@ -44,23 +44,35 @@ For voice, latency is king. GPT-5-mini delivers GPT-5-class reasoning at mini-ti
 
 ## Part B: Problem Solving & Debugging
 
-### Challenge: Phone Number Format Matching
+### Challenge: VAPI Webhook Message Format Mismatch
 
-**Problem**: Callers say phone numbers in varied formats — "five five five, one two three, four five six seven", "(555) 123-4567", "5551234567". Airtable stores them in one format, but the STT transcription produces unpredictable output.
+**Problem**: During initial testing, every call failed — the agent would say "I wasn't able to find an account with that number" even though the phone number existed in Airtable. Direct testing of the Airtable lookup function with the same phone number returned results correctly. The webhook was receiving requests (200 status codes), but the tool results were never reaching the LLM.
 
-**How I Solved It**: Implemented a `normalize_phone()` function that strips all non-digit characters before querying Airtable. On the Airtable side, the lookup formula also strips formatting from stored values using nested `SUBSTITUTE()` calls. This means both sides compare pure digit strings regardless of how the number was spoken or stored.
+**Debugging Process**: I added request logging and inspected the raw webhook payloads via ngrok's inspection API. This revealed two issues:
+
+1. **Wrong message type**: The VAPI documentation examples referenced a `function-call` message type, but the actual API was sending `tool-calls`. Our webhook handler had no case for `tool-calls`, so it fell through to the default `{"ok": true}` response — which VAPI interpreted as a failed tool call with no result. The LLM then assumed the lookup found nothing.
+
+2. **Different payload structure**: The `tool-calls` format wraps function calls in a `toolCallList` array with `toolCallId` identifiers, and expects results keyed by those IDs. The legacy `function-call` format used `functionCall.name` and `functionCall.parameters` directly.
+
+**How I Solved It**: Added a `handle_tool_calls` handler that parses the `toolCallList` array, routes each call to the correct function, and returns results in the `[{toolCallId, result}]` format VAPI expects. I kept the legacy `function-call` handler as a fallback for backward compatibility.
 
 ```python
-def normalize_phone(phone: str) -> str:
-    return "".join(c for c in phone if c.isdigit())
+async def handle_tool_calls(message: dict) -> dict:
+    tool_calls = message.get("toolCallList", [])
+    results = []
+    for tool_call in tool_calls:
+        fn_name = tool_call.get("function", {}).get("name", "")
+        fn_args = tool_call.get("function", {}).get("arguments", {})
+        # Route to handler, collect result
+        results.append({"toolCallId": tool_call["id"], "result": result_str})
+    return {"results": results}
 ```
 
-The Airtable formula mirrors this:
-```
-SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE({Phone}, '-', ''), '(', ''), ')', ''), ' ', '') = '5551234567'
-```
+**Why this matters**: In voice AI integrations, silent failures are the worst kind — the system appears to work (200 OK, no errors) but the user experience is broken. This reinforced the importance of end-to-end testing with real calls rather than relying on documentation alone, and logging the full request/response cycle at every integration boundary.
 
-**Why this matters**: In voice AI, the gap between what users say and what the system expects is the #1 source of failures. Normalizing at both ends eliminates an entire class of lookup failures.
+### Secondary Challenge: Phone Number Normalization
+
+Callers speak phone numbers in varied formats that STT transcribes unpredictably. I implemented `normalize_phone()` to strip non-digit characters on both the application side and via Airtable's `SUBSTITUTE()` formula, so both sides compare pure digit strings regardless of format.
 
 ### If I Had One More Week
 
