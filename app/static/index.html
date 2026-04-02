@@ -154,7 +154,9 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import Vapi from 'https://esm.sh/@vapi-ai/web@latest';
+
         const VAPI_PUBLIC_KEY = "13724ae2-58ef-44cc-8b99-03f4be63b2ea";
         const ASSISTANT_ID = "8908370d-4aab-440f-a7f5-a9ae02a7c770";
 
@@ -194,19 +196,8 @@
                 updateStatus('Connecting...', 'connecting');
 
                 try {
-                    // Load VAPI SDK dynamically
-                    if (!window.Vapi) {
-                        await new Promise((resolve, reject) => {
-                            const script = document.createElement('script');
-                            script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js';
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                    }
-
                     if (!vapi) {
-                        vapi = new window.Vapi(VAPI_PUBLIC_KEY);
+                        vapi = new Vapi(VAPI_PUBLIC_KEY);
 
                         vapi.on('call-start', () => {
                             callActive = true;
@@ -254,6 +245,9 @@
                 stopTimer();
             }
         }
+
+        // Expose to onclick handler
+        window.toggleCall = toggleCall;
     </script>
 </body>
 </html>
