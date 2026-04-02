@@ -1,5 +1,8 @@
 import logging
+from pathlib import Path
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.routes.health import router as health_router
 from app.routes.vapi_webhook import router as vapi_router
 
@@ -17,11 +20,10 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(vapi_router)
 
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 @app.get("/")
 async def root():
-    return {
-        "service": "Observe Insurance Voice Agent",
-        "docs": "/docs",
-        "health": "/health",
-    }
+    return FileResponse(str(STATIC_DIR / "index.html"))

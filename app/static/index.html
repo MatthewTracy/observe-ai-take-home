@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observe Insurance — AI Claims Support Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            background: #1a1a2e;
+            color: white;
+            width: 100%;
+            padding: 24px;
+            text-align: center;
+        }
+        .header h1 { font-size: 24px; font-weight: 600; }
+        .header p { color: #a0a0b8; margin-top: 4px; font-size: 14px; }
+        .container {
+            max-width: 640px;
+            width: 100%;
+            padding: 32px 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        .card h2 { font-size: 18px; margin-bottom: 16px; }
+        .call-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .call-btn.start {
+            background: #2563eb;
+            color: white;
+        }
+        .call-btn.start:hover { background: #1d4ed8; }
+        .call-btn.end {
+            background: #dc2626;
+            color: white;
+        }
+        .call-btn.end:hover { background: #b91c1c; }
+        .call-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status.idle { background: #f1f5f9; color: #64748b; }
+        .status.connecting { background: #fef3c7; color: #92400e; }
+        .status.active { background: #dcfce7; color: #166534; }
+        .status.ended { background: #f1f5f9; color: #64748b; }
+        .test-numbers {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .test-numbers h3 { font-size: 14px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .number-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .number-row:last-child { border-bottom: none; }
+        .number-row .phone { font-weight: 600; font-family: monospace; }
+        .number-row .detail { color: #64748b; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.approved { background: #dcfce7; color: #166534; }
+        .badge.pending { background: #fef3c7; color: #92400e; }
+        .badge.docs { background: #fee2e2; color: #991b1b; }
+        .badge.notfound { background: #f1f5f9; color: #64748b; }
+        .info { font-size: 13px; color: #94a3b8; text-align: center; margin-top: 8px; }
+        .timer { font-size: 24px; font-weight: 600; text-align: center; margin: 8px 0; font-family: monospace; }
+        .links { text-align: center; margin-top: 16px; font-size: 13px; }
+        .links a { color: #2563eb; text-decoration: none; margin: 0 8px; }
+        .links a:hover { text-decoration: underline; }
+        .phone-link { font-size: 14px; text-align: center; color: #64748b; margin-top: 12px; }
+        .phone-link a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Observe Insurance</h1>
+        <p>AI Claims Support Assistant — Live Demo</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="status" class="status idle">Click "Start Call" to speak with the AI assistant</div>
+            <div id="timer" class="timer" style="display:none">00:00</div>
+            <button id="callBtn" class="call-btn start" onclick="toggleCall()">Start Call</button>
+            <div class="phone-link">
+                Or call by phone: <a href="tel:+18304579298">+1 (830) 457-9298</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="test-numbers">
+                <h3>Test Phone Numbers</h3>
+                <div class="number-row">
+                    <span class="phone">555-123-4567</span>
+                    <span class="detail">Sarah Johnson — <span class="badge approved">Approved</span></span>
+                </div>
+                <div class="number-row">
+                    <span class="phone">555-234-5678</span>
+                    <span class="detail">Michael Chen — <span class="badge pending">Pending</span></span>
+                </div>
+                <div class="number-row">
+                    <span class="phone">555-345-6789</span>
+                    <span class="detail">Emily Rodriguez — <span class="badge docs">Requires Docs</span></span>
+                </div>
+                <div class="number-row">
+                    <span class="phone">555-999-0000</span>
+                    <span class="detail"><span class="badge notfound">Not Found</span> (error path)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="/docs">API Docs</a>
+            <a href="https://github.com/MatthewTracy/observe-ai-take-home">GitHub Repo</a>
+        </div>
+    </div>
+
+    <script>
+        const VAPI_PUBLIC_KEY = "13724ae2-58ef-44cc-8b99-03f4be63b2ea";
+        const ASSISTANT_ID = "8908370d-4aab-440f-a7f5-a9ae02a7c770";
+
+        let vapi = null;
+        let callActive = false;
+        let timerInterval = null;
+        let seconds = 0;
+
+        function updateStatus(text, className) {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status ' + className;
+        }
+
+        function updateTimer() {
+            seconds++;
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            document.getElementById('timer').textContent = m + ':' + s;
+        }
+
+        function startTimer() {
+            seconds = 0;
+            document.getElementById('timer').style.display = 'block';
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        async function toggleCall() {
+            const btn = document.getElementById('callBtn');
+
+            if (!callActive) {
+                btn.disabled = true;
+                updateStatus('Connecting...', 'connecting');
+
+                try {
+                    // Load VAPI SDK dynamically
+                    if (!window.Vapi) {
+                        await new Promise((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.js';
+                            script.onload = resolve;
+                            script.onerror = reject;
+                            document.head.appendChild(script);
+                        });
+                    }
+
+                    if (!vapi) {
+                        vapi = new window.Vapi(VAPI_PUBLIC_KEY);
+
+                        vapi.on('call-start', () => {
+                            callActive = true;
+                            btn.disabled = false;
+                            btn.textContent = 'End Call';
+                            btn.className = 'call-btn end';
+                            updateStatus('Call active — speak into your microphone', 'active');
+                            startTimer();
+                        });
+
+                        vapi.on('call-end', () => {
+                            callActive = false;
+                            btn.disabled = false;
+                            btn.textContent = 'Start Call';
+                            btn.className = 'call-btn start';
+                            updateStatus('Call ended. Click "Start Call" to try again.', 'ended');
+                            stopTimer();
+                        });
+
+                        vapi.on('error', (e) => {
+                            console.error('VAPI error:', e);
+                            callActive = false;
+                            btn.disabled = false;
+                            btn.textContent = 'Start Call';
+                            btn.className = 'call-btn start';
+                            updateStatus('Error: ' + (e.message || 'Connection failed. Please try again.'), 'idle');
+                            stopTimer();
+                        });
+                    }
+
+                    await vapi.start(ASSISTANT_ID);
+                } catch (err) {
+                    console.error('Failed to start call:', err);
+                    btn.disabled = false;
+                    btn.textContent = 'Start Call';
+                    btn.className = 'call-btn start';
+                    updateStatus('Failed to connect. Check microphone permissions and try again.', 'idle');
+                }
+            } else {
+                vapi.stop();
+                callActive = false;
+                btn.textContent = 'Start Call';
+                btn.className = 'call-btn start';
+                updateStatus('Call ended. Click "Start Call" to try again.', 'ended');
+                stopTimer();
+            }
+        }
+    </script>
+</body>
+</html>
