@@ -31,6 +31,15 @@ def lookup_caller(phone: str) -> CallerRecord | None:
     formula = f"SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE({{Phone}}, '-', ''), '(', ''), ')', ''), ' ', '') = '{normalized}'"
     records = table.all(formula=formula)
 
+    # If no exact match and we have 7+ digits, try matching last 7 digits
+    # This handles STT dropping a leading digit (e.g. "551234567" instead of "5551234567")
+    if not records and len(normalized) >= 7:
+        last7 = normalized[-7:]
+        formula7 = f"RIGHT(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE({{Phone}}, '-', ''), '(', ''), ')', ''), ' ', ''), 7) = '{last7}'"
+        records = table.all(formula=formula7)
+        if records:
+            logger.info(f"Matched on last 7 digits: {last7}")
+
     if not records:
         logger.info(f"No caller found for phone: {normalized}")
         return None
