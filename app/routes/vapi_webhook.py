@@ -147,12 +147,12 @@ def handle_lookup_caller(args: dict, call_id: str) -> dict:
         "results": [
             {
                 "result": (
-                    f"Found account. The caller's name is {caller.first_name} {caller.last_name}. "
-                    f"Please confirm their identity by asking 'Am I speaking with {caller.first_name} {caller.last_name}?' "
-                    f"If confirmed, their claim status is: {caller.claim_status}. "
-                    f"If they ask for their claim ID, say it exactly like this: 'Your claim ID is {_format_for_voice(caller.claim_id)}'. "
-                    f"If they ask for their policy number, say it exactly like this: 'Your policy number is {_format_for_voice(caller.policy_number)}'. "
-                    f"Do NOT mention the claim ID or policy number unless the caller asks."
+                    f"Account found. "
+                    f"You MUST now say EXACTLY this: 'Am I speaking with {caller.first_name} {caller.last_name}?' "
+                    f"Do not paraphrase. Do not say 'account holder'. Say their actual name. "
+                    f"After they confirm, their claim status is: {caller.claim_status}. "
+                    f"Only if they ask for claim ID: {_format_for_voice(caller.claim_id)}. "
+                    f"Only if they ask for policy number: {_format_for_voice(caller.policy_number)}."
                 )
             }
         ]
