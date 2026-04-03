@@ -15,18 +15,18 @@ This solution uses a managed voice AI platform (VAPI) with a custom webhook back
 | **LLM** | GPT-4o-mini | Optimized for low-latency voice interactions at $0.15/MTok input. Reliable function calling for our two tools (lookup + logging). Handles our multi-step system prompt (auth flow, branching, FAQ, safety) well. The mini form factor delivers the fast time-to-first-token critical for natural phone conversations. |
 | **TTS** | ElevenLabs | Most natural-sounding voice synthesis available. The "warmth" and "stability" controls let us dial in a calm, professional insurance support tone. Streaming output means the caller hears the first word within ~300ms of LLM completion. |
 | **Backend** | Python + FastAPI | Async-native, minimal boilerplate. Perfect for a webhook server that receives VAPI events and returns structured tool results. Pydantic models provide request/response validation. Easy to deploy on any platform. |
-| **Data Store** | Airtable | Provides both a structured API and a visual UI — reviewers can see the data without needing database tools. The pyairtable SDK handles auth and pagination. For production, this would migrate to PostgreSQL. |
+| **Data Store** | Airtable | Provides both a structured API and a visual UI  - reviewers can see the data without needing database tools. The pyairtable SDK handles auth and pagination. For production, this would migrate to PostgreSQL. |
 
 ### Why This Architecture (vs. Alternatives)
 
 **Why VAPI over building a custom pipeline (Twilio + Deepgram + OpenAI + ElevenLabs)?**
-A custom pipeline gives maximum control but requires managing: audio streaming, WebSocket connections, turn-taking/interruption detection, silence detection, and audio synchronization. VAPI handles all of this, letting us focus on the conversational logic and integrations — which is what the assessment evaluates.
+A custom pipeline gives maximum control but requires managing: audio streaming, WebSocket connections, turn-taking/interruption detection, silence detection, and audio synchronization. VAPI handles all of this, letting us focus on the conversational logic and integrations  - which is what the assessment evaluates.
 
 **Why a webhook server over VAPI's built-in integrations?**
-VAPI offers native Airtable/Google Sheets connectors, but a custom webhook gives us: phone number normalization, fallback logging on call end, call state tracking, and structured error handling. This also demonstrates engineering capability — we're not just wiring no-code tools together.
+VAPI offers native Airtable/Google Sheets connectors, but a custom webhook gives us: phone number normalization, fallback logging on call end, call state tracking, and structured error handling. This also demonstrates engineering capability  - we're not just wiring no-code tools together.
 
 **Why GPT-4o-mini over GPT-4o or Claude?**
-For voice, latency is king. GPT-4o-mini delivers fast time-to-first-token while maintaining strong instruction following. The system prompt is complex (multi-step auth, branching, FAQ, safety) but doesn't require frontier-level reasoning — it's structured instruction following, which mini models handle well. At $0.15/MTok input, it's significantly cheaper than GPT-4o ($2.50/MTok), which matters at scale when handling thousands of calls daily.
+For voice, latency is king. GPT-4o-mini delivers fast time-to-first-token while maintaining strong instruction following. The system prompt is complex (multi-step auth, branching, FAQ, safety) but doesn't require frontier-level reasoning  - it's structured instruction following, which mini models handle well. At $0.15/MTok input, it's significantly cheaper than GPT-4o ($2.50/MTok), which matters at scale when handling thousands of calls daily.
 
 ### Production Scaling Considerations
 
@@ -46,11 +46,11 @@ For voice, latency is king. GPT-4o-mini delivers fast time-to-first-token while 
 
 ### Challenge: VAPI Webhook Message Format Mismatch
 
-**Problem**: During initial testing, every call failed — the agent would say "I wasn't able to find an account with that number" even though the phone number existed in Airtable. Direct testing of the Airtable lookup function with the same phone number returned results correctly. The webhook was receiving requests (200 status codes), but the tool results were never reaching the LLM.
+**Problem**: During initial testing, every call failed  - the agent would say "I wasn't able to find an account with that number" even though the phone number existed in Airtable. Direct testing of the Airtable lookup function with the same phone number returned results correctly. The webhook was receiving requests (200 status codes), but the tool results were never reaching the LLM.
 
 **Debugging Process**: I added request logging and inspected the raw webhook payloads via ngrok's inspection API. This revealed two issues:
 
-1. **Wrong message type**: The VAPI documentation examples referenced a `function-call` message type, but the actual API was sending `tool-calls`. Our webhook handler had no case for `tool-calls`, so it fell through to the default `{"ok": true}` response — which VAPI interpreted as a failed tool call with no result. The LLM then assumed the lookup found nothing.
+1. **Wrong message type**: The VAPI documentation examples referenced a `function-call` message type, but the actual API was sending `tool-calls`. Our webhook handler had no case for `tool-calls`, so it fell through to the default `{"ok": true}` response  - which VAPI interpreted as a failed tool call with no result. The LLM then assumed the lookup found nothing.
 
 2. **Different payload structure**: The `tool-calls` format wraps function calls in a `toolCallList` array with `toolCallId` identifiers, and expects results keyed by those IDs. The legacy `function-call` format used `functionCall.name` and `functionCall.parameters` directly.
 
@@ -68,7 +68,7 @@ async def handle_tool_calls(message: dict) -> dict:
     return {"results": results}
 ```
 
-**Why this matters**: In voice AI integrations, silent failures are the worst kind — the system appears to work (200 OK, no errors) but the user experience is broken. This reinforced the importance of end-to-end testing with real calls rather than relying on documentation alone, and logging the full request/response cycle at every integration boundary.
+**Why this matters**: In voice AI integrations, silent failures are the worst kind  - the system appears to work (200 OK, no errors) but the user experience is broken. This reinforced the importance of end-to-end testing with real calls rather than relying on documentation alone, and logging the full request/response cycle at every integration boundary.
 
 ### Secondary Challenge: Phone Number Normalization
 
@@ -101,7 +101,7 @@ Callers speak phone numbers in varied formats that STT transcribes unpredictably
 | **Sentiment Distribution** | % positive / neutral / negative from logged interactions | > 60% positive | Caller satisfaction proxy |
 | **Function Call Error Rate** | % of tool invocations that return errors | < 1% | System reliability |
 | **First Response Latency** | Time from caller's utterance to first word of agent response | < 1.5s | Natural conversation feel |
-| **Escalation Rate** | % of calls transferred or promised a callback | < 15% | Inverse of containment — should decrease over time |
+| **Escalation Rate** | % of calls transferred or promised a callback | < 15% | Inverse of containment  - should decrease over time |
 
 ### How to Use This Data
 
@@ -114,30 +114,30 @@ Callers speak phone numbers in varied formats that STT transcribes unpredictably
 
 **Prompt Tuning Loop:**
 - **Low containment on "Requires Documentation" calls** → Callers keep asking follow-up questions about what documents are needed. **Fix**: Add specific document lists per claim type to the knowledge base, so the agent can say "For your auto claim, we need the police report and repair estimate" instead of generic instructions.
-- **High negative sentiment on error paths** → Callers are frustrated when their number isn't found. **Fix**: Adjust the error path tone to be more empathetic and proactive ("I'm sorry about that — let me make sure a specialist calls you back today").
+- **High negative sentiment on error paths** → Callers are frustrated when their number isn't found. **Fix**: Adjust the error path tone to be more empathetic and proactive ("I'm sorry about that  - let me make sure a specialist calls you back today").
 
 ### Example: Diagnosing a Drop in Containment Rate
 
 **Scenario**: Containment rate drops from 87% to 72% over one week.
 
-**Step 1 — Segment the drop:**
+**Step 1  - Segment the drop:**
 Query interaction logs filtered by `Authenticated = false`. If unauthenticated calls spiked, the problem is in the lookup/verification flow, not claim delivery.
 
-**Step 2 — Analyze transcripts:**
+**Step 2  - Analyze transcripts:**
 Pull the 50 most recent escalated calls. Cluster by failure reason:
-- 40% — Phone number not found (new customers from recent marketing campaign not yet in system)
-- 30% — Caller asked about a different policy type (life insurance, not claims)
-- 30% — Caller wanted to update their address (not a supported action)
+- 40%  - Phone number not found (new customers from recent marketing campaign not yet in system)
+- 30%  - Caller asked about a different policy type (life insurance, not claims)
+- 30%  - Caller wanted to update their address (not a supported action)
 
-**Step 3 — Root cause:**
+**Step 3  - Root cause:**
 The marketing campaign brought in new customers whose records haven't been backfilled into the Callers table. The other failures are scope mismatches.
 
-**Step 4 — Fix:**
+**Step 4  - Fix:**
 1. **Immediate**: Set up a nightly sync from the CRM to Airtable/database so new customer records appear within 24 hours of policy creation.
-2. **Prompt update**: Add a branch for "account not found — might be a new customer" that collects their policy number and manually looks it up, or fast-tracks the human callback.
+2. **Prompt update**: Add a branch for "account not found  - might be a new customer" that collects their policy number and manually looks it up, or fast-tracks the human callback.
 3. **Scope expansion**: Add address update and policy type routing to the agent's capabilities (or redirect those callers to the right department upfront).
 
-**Step 5 — Measure:**
+**Step 5  - Measure:**
 Track containment rate daily for the next week. Expect recovery to 85%+ within 3-4 days as the data sync catches up, with further improvement as the prompt changes take effect.
 
 ### ROI Framework

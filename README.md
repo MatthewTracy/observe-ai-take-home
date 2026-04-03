@@ -1,12 +1,12 @@
-# Observe Insurance — AI Claims Support Voice Agent
+# Observe Insurance - AI Claims Support Voice Agent
 
 A VoiceAI agent that handles inbound customer calls for insurance claim status checks. Built with **VAPI**, **GPT-4o-mini**, **FastAPI**, and **Airtable**.
 
 ## Live Demo
 
-**Call: +1 (830) 457-9298** — the agent is live 24/7 on Render.
+**Call: +1 (830) 457-9298** - the agent is live 24/7 on Render.
 
-**Web Demo**: [observe-ai-take-home.onrender.com](https://observe-ai-take-home.onrender.com) — talk to the agent from your browser (no phone needed).
+**Web Demo**: [observe-ai-take-home.onrender.com](https://observe-ai-take-home.onrender.com) - talk to the agent from your browser (no phone needed).
 
 > **Note**: The service runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request may take ~30 seconds to cold start. Visit the web demo URL a moment before calling to warm it up.
 
@@ -24,7 +24,7 @@ A caller dials in and the AI assistant:
 2. **Authenticates** by looking up their record in Airtable and confirming their name
 3. **Delivers claim status** (approved, pending, or requires documentation) with clear next steps
 4. **Answers FAQs** about office hours, mailing address, claims process, etc.
-5. **Handles edge cases** — unknown numbers, wrong identity, emergency, escalation requests
+5. **Handles edge cases** like unknown numbers, wrong identity, emergency, and escalation requests
 6. **Logs the interaction** to Airtable with caller name, summary, sentiment, and timestamp
 
 ## Architecture
