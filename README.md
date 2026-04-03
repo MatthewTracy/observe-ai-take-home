@@ -13,6 +13,8 @@ A VoiceAI agent that handles inbound customer calls for insurance claim status c
 - **Happy path**: Say your number is "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
 - **Error path**: Say your number is "555-999-0000" → not found → offers human callback
 
+**Airtable (view-only)**: [View Callers & Interactions tables](https://airtable.com/invite/l?inviteId=invH4grPDM4fNHV8O&inviteToken=8727687b14beb63edcb0234b21b9bae714ae6560f65cab522b5e5cf344476a9a)
+
 > API Docs (Swagger): [observe-ai-take-home.onrender.com/docs](https://observe-ai-take-home.onrender.com/docs)
 
 ## What It Does
