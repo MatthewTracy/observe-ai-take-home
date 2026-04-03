@@ -27,7 +27,7 @@ def lookup_caller(phone: str) -> CallerRecord | None:
     table = _callers_table()
     normalized = normalize_phone(phone)
 
-    # Search with Airtable formula — try exact match first
+    # Search with Airtable formula  - try exact match first
     formula = f"SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE({{Phone}}, '-', ''), '(', ''), ')', ''), ' ', '') = '{normalized}'"
     records = table.all(formula=formula)
 
