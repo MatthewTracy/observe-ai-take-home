@@ -107,6 +107,11 @@ async def handle_function_call(message: dict) -> dict:
         return {"results": [{"result": f"Unknown function: {fn_name}"}]}
 
 
+def _format_for_voice(code: str) -> str:
+    """Format IDs for natural TTS reading. CLM-2024-001 -> CLM dash 2024 dash 001"""
+    return code.replace("-", " dash ")
+
+
 def handle_lookup_caller(args: dict, call_id: str) -> dict:
     """Look up caller by phone number and return their record."""
     phone = args.get("phone_number", "")
@@ -145,7 +150,7 @@ def handle_lookup_caller(args: dict, call_id: str) -> dict:
                     f"Found account. The caller's name is {caller.first_name} {caller.last_name}. "
                     f"Please confirm their identity by asking 'Am I speaking with {caller.first_name} {caller.last_name}?' "
                     f"If confirmed, their claim status is: {caller.claim_status}. "
-                    f"Claim ID: {caller.claim_id}. Policy Number: {caller.policy_number}."
+                    f"Claim ID: {_format_for_voice(caller.claim_id)}. Policy Number: {_format_for_voice(caller.policy_number)}."
                 )
             }
         ]
