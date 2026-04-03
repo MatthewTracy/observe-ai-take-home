@@ -6,6 +6,10 @@ A VoiceAI agent that handles inbound customer calls for insurance claim status c
 
 **Call: +1 (830) 457-9298** — the agent is live 24/7 on Render.
 
+**Web Demo**: [observe-ai-take-home.onrender.com](https://observe-ai-take-home.onrender.com) — talk to the agent from your browser (no phone needed).
+
+> **Note**: The service runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request may take ~30 seconds to cold start. Visit the web demo URL a moment before calling to warm it up.
+
 - **Happy path**: Say your number is "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
 - **Error path**: Say your number is "555-999-0000" → not found → offers human callback
 
