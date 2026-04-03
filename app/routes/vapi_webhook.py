@@ -112,6 +112,23 @@ def _format_for_voice(code: str) -> str:
     return code.replace("-", " dash ")
 
 
+def _spell_for_voice(code: str) -> str:
+    """Spell out IDs so TTS reads them correctly.
+    CLM-2024-001 -> C L M dash 2 0 2 4 dash 0 0 1
+    """
+    parts = []
+    for char in code:
+        if char == "-":
+            parts.append("dash")
+        elif char.isalpha():
+            parts.append(char.upper())
+        elif char.isdigit():
+            parts.append(char)
+        else:
+            parts.append(char)
+    return " ".join(parts)
+
+
 def handle_lookup_caller(args: dict, call_id: str) -> dict:
     """Look up caller by phone number and return their record."""
     phone = args.get("phone_number", "")
@@ -152,7 +169,10 @@ def handle_lookup_caller(args: dict, call_id: str) -> dict:
                     f"Account found. "
                     f"You MUST now say EXACTLY this: 'Am I speaking with {caller.first_name} {caller.last_name}?' "
                     f"Do not paraphrase. Do not say 'account holder'. Say their actual name. "
-                    f"After they confirm, their claim status is: {caller.claim_status}."
+                    f"After they confirm, their claim status is: {caller.claim_status}. "
+                    f"Do NOT volunteer the claim ID or policy number. Only share them if the caller specifically asks. "
+                    f"If asked for claim ID, read it EXACTLY as: '{_spell_for_voice(caller.claim_id)}'. "
+                    f"If asked for policy number, read it EXACTLY as: '{_spell_for_voice(caller.policy_number)}'."
                 )
             }
         ]
