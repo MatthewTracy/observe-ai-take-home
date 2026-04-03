@@ -10,8 +10,9 @@ A VoiceAI agent that handles inbound customer calls for insurance claim status c
 
 > **Note**: The service runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request may take ~30 seconds to cold start. Visit the web demo URL a moment before calling to warm it up.
 
-- **Happy path**: Say your number is "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
-- **Error path**: Say your number is "555-999-0000" → not found → offers human callback
+### Demo Recordings
+- **Happy path**: [Watch demo](https://youtu.be/5aejK6hSrXk) - Say "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
+- **Error path**: [Watch demo](https://youtu.be/y8MjNVFj-es) - Say "555-999-0000" → not found → offers human callback
 
 **Airtable (view-only)**: [View Callers & Interactions tables](https://airtable.com/invite/l?inviteId=invH4grPDM4fNHV8O&inviteToken=8727687b14beb63edcb0234b21b9bae714ae6560f65cab522b5e5cf344476a9a)
 
