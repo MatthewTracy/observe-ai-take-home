@@ -4,19 +4,19 @@ A VoiceAI agent that handles inbound customer calls for insurance claim status c
 
 ## Live Demo
 
-**Call: +1 (830) 457-9298** - the agent is live 24/7 on Render.
+**Call: +1 (830) 457-9298** — the agent is live 24/7.
 
-**Web Demo**: [observe-ai-take-home.onrender.com](https://observe-ai-take-home.onrender.com) - talk to the agent from your browser (no phone needed).
+**Web Demo**: [voice-claims-agent.onrender.com](https://voice-claims-agent.onrender.com) — talk to the agent from your browser (no phone needed).
 
-> **Note**: The service runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request may take ~30 seconds to cold start. Visit the web demo URL a moment before calling to warm it up.
+> **⚠️ Free tier warm-up (~30 sec)**: The backend runs on Render's free tier, which spins down after 15 minutes of inactivity. **Before calling, open the web demo URL above and wait until the page loads.** This wakes the server so the phone agent responds without delay. If you call without warming it up first, expect a long silence on the first turn while the server boots.
 
 ### Demo Recordings
-- **"Happy" interaction**: [Watch demo](https://youtu.be/5aejK6hSrXk) - Say "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
-- **"Error" interaction**: [Watch demo](https://youtu.be/y8MjNVFj-es) - Say "555-999-0000" → not found → offers human callback
+- **"Happy" interaction**: [Watch demo](https://youtu.be/5aejK6hSrXk) — Say "555-123-4567" → confirms Sarah Johnson → delivers approved claim status
+- **"Error" interaction**: [Watch demo](https://youtu.be/y8MjNVFj-es) — Say "555-999-0000" → not found → offers human callback
 
 **Airtable (view-only)**: [View Callers & Interactions tables](https://airtable.com/invite/l?inviteId=invH4grPDM4fNHV8O&inviteToken=8727687b14beb63edcb0234b21b9bae714ae6560f65cab522b5e5cf344476a9a)
 
-> API Docs (Swagger): [observe-ai-take-home.onrender.com/docs](https://observe-ai-take-home.onrender.com/docs)
+> API Docs (Swagger): [voice-claims-agent.onrender.com/docs](https://voice-claims-agent.onrender.com/docs)
 
 ## What It Does
 
@@ -82,8 +82,8 @@ See [docs/architecture.md](docs/architecture.md) for full system diagrams and [d
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/MatthewTracy/observe-ai-take-home.git
-cd observe-ai-take-home
+git clone https://github.com/MatthewTracy/voice-claims-agent.git
+cd voice-claims-agent
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -142,8 +142,8 @@ pytest tests/ -v
 ### 7. Docker (Alternative)
 
 ```bash
-docker build -t observe-voice-agent .
-docker run -p 8000:8000 --env-file .env observe-voice-agent
+docker build -t voice-claims-agent .
+docker run -p 8000:8000 --env-file .env voice-claims-agent
 ```
 
 ### 8. Configure VAPI
@@ -151,8 +151,9 @@ docker run -p 8000:8000 --env-file .env observe-voice-agent
 1. Go to [VAPI Dashboard](https://dashboard.vapi.ai)
 2. Create a new assistant using the config in `vapi/agent_config.json`
 3. Set the **Server URL** to your deployment URL + `/vapi/webhook`
-4. Assign a phone number to the assistant
-5. Call the number to test!
+4. Under **Server URL → HTTP Headers**, add `x-vapi-secret: <your VAPI_WEBHOOK_SECRET value>` so the FastAPI handler can authenticate VAPI's requests
+5. Assign a phone number to the assistant
+6. Call the number to test!
 
 ## Branching Workflows
 
@@ -180,12 +181,12 @@ Greeting → Phone Number → Airtable Lookup (found) → "Am I speaking with Sa
 At any point → Caller mentions emergency → "Please hang up and dial 911 immediately"
 ```
 
-## Deliverables
+## Documentation
 
-| Deliverable | Location |
-|-------------|----------|
-| Working Voice Agent | **+1 (830) 457-9298** (live) |
-| API Docs | [observe-ai-take-home.onrender.com/docs](https://observe-ai-take-home.onrender.com/docs) |
+| Resource | Location |
+|----------|----------|
+| Live Voice Agent | **+1 (830) 457-9298** |
+| API Docs (Swagger) | [voice-claims-agent.onrender.com/docs](https://voice-claims-agent.onrender.com/docs) |
 | Conversation Flow Chart | [docs/conversation_flow.md](docs/conversation_flow.md) |
 | System Architecture Diagram | [docs/architecture.md](docs/architecture.md) |
 | Technical Write-Up | [docs/technical_writeup.md](docs/technical_writeup.md) |

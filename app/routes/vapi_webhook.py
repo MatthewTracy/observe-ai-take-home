@@ -1,10 +1,11 @@
 import json
 import logging
+import secrets as _secrets
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException
 from app.services.airtable import lookup_caller, log_interaction
 from app.models.schemas import Sentiment
-from app.config import VAPI_API_KEY
+from app.config import VAPI_API_KEY, VAPI_WEBHOOK_SECRET
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -13,16 +14,25 @@ router = APIRouter()
 _call_state: dict[str, dict] = {}
 
 
-def verify_vapi_request(request: Request) -> bool:
-    """Verify the request comes from VAPI by checking the secret header."""
-    vapi_secret = request.headers.get("x-vapi-secret", "")
-    # If no VAPI_API_KEY configured, skip verification (dev mode)
-    if not VAPI_API_KEY:
-        return True
-    # VAPI sends the server secret in x-vapi-secret header
-    # For now, we verify the request has a valid call ID
-    # In production, configure a server secret in VAPI and validate here
-    return True
+def verify_vapi_request(request: Request) -> None:
+    """Reject the request unless it carries the configured VAPI webhook secret.
+
+    If VAPI_WEBHOOK_SECRET is unset (e.g. local dev or first deploy before
+    the env var has been added) we log a warning and allow the request, so
+    the live demo doesn't break before the secret is wired up on both ends.
+    """
+    if not VAPI_WEBHOOK_SECRET:
+        logger.warning(
+            "VAPI_WEBHOOK_SECRET is not set — webhook is unauthenticated. "
+            "Set the env var on the server and add a matching x-vapi-secret "
+            "header in the VAPI assistant's Server URL config."
+        )
+        return
+
+    provided = request.headers.get("x-vapi-secret", "")
+    if not _secrets.compare_digest(provided, VAPI_WEBHOOK_SECRET):
+        logger.warning("Rejected VAPI webhook: missing or invalid x-vapi-secret header")
+        raise HTTPException(status_code=401, detail="unauthorized")
 
 
 @router.post("/vapi/webhook")
@@ -36,6 +46,7 @@ async def vapi_webhook(request: Request):
     - end-of-call-report: Call has ended, includes transcript + summary
     - status-update: Call status changes
     """
+    verify_vapi_request(request)
     body = await request.json()
     message = body.get("message", {})
     msg_type = message.get("type", "")

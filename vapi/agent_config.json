@@ -12,7 +12,7 @@
       {
         "type": "function",
         "server": {
-          "url": "https://observe-ai-take-home.onrender.com/vapi/webhook"
+          "url": "https://voice-claims-agent.onrender.com/vapi/webhook"
         },
         "function": {
           "name": "lookup_caller",
@@ -34,7 +34,7 @@
       {
         "type": "function",
         "server": {
-          "url": "https://observe-ai-take-home.onrender.com/vapi/webhook"
+          "url": "https://voice-claims-agent.onrender.com/vapi/webhook"
         },
         "function": {
           "name": "log_interaction",
@@ -91,8 +91,8 @@
   },
   "silenceTimeoutSeconds": 30,
   "responseDelaySeconds": 1,
-  "serverUrl": "https://observe-ai-take-home.onrender.com/vapi/webhook",
-  "maxDurationSeconds": 600,
+  "serverUrl": "https://voice-claims-agent.onrender.com/vapi/webhook",
+  "maxDurationSeconds": 300,
   "backchannelingEnabled": false,
   "startSpeakingPlan": {
     "waitSeconds": 1.5,
