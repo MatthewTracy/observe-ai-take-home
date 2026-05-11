@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.routes.health import router as health_router
 from app.routes.vapi_webhook import router as vapi_router
+from app.routes.web_call import router as web_call_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,6 +20,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(vapi_router)
+app.include_router(web_call_router)
 
 STATIC_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

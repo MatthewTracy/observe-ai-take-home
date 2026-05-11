@@ -157,9 +157,6 @@
     <script type="module">
         import Vapi from 'https://esm.sh/@vapi-ai/web@latest';
 
-        const VAPI_PUBLIC_KEY = "13724ae2-58ef-44cc-8b99-03f4be63b2ea";
-        const ASSISTANT_ID = "8908370d-4aab-440f-a7f5-a9ae02a7c770";
-
         let vapi = null;
         let callActive = false;
         let timerInterval = null;
@@ -188,6 +185,39 @@
             clearInterval(timerInterval);
         }
 
+        function attachVapiHandlers(instance) {
+            instance.on('call-start', () => {
+                const btn = document.getElementById('callBtn');
+                callActive = true;
+                btn.disabled = false;
+                btn.textContent = 'End Call';
+                btn.className = 'call-btn end';
+                updateStatus('Call active  - speak into your microphone', 'active');
+                startTimer();
+            });
+
+            instance.on('call-end', () => {
+                const btn = document.getElementById('callBtn');
+                callActive = false;
+                btn.disabled = false;
+                btn.textContent = 'Start Call';
+                btn.className = 'call-btn start';
+                updateStatus('Call ended. Click "Start Call" to try again.', 'ended');
+                stopTimer();
+            });
+
+            instance.on('error', (e) => {
+                const btn = document.getElementById('callBtn');
+                console.error('VAPI error:', e);
+                callActive = false;
+                btn.disabled = false;
+                btn.textContent = 'Start Call';
+                btn.className = 'call-btn start';
+                updateStatus('Error: ' + (e.message || 'Connection failed. Please try again.'), 'idle');
+                stopTimer();
+            });
+        }
+
         async function toggleCall() {
             const btn = document.getElementById('callBtn');
 
@@ -196,45 +226,28 @@
                 updateStatus('Connecting...', 'connecting');
 
                 try {
+                    const resp = await fetch('/api/vapi/webcall', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (!resp.ok) {
+                        const errText = await resp.text();
+                        throw new Error('Server refused call: ' + errText);
+                    }
+                    const call = await resp.json();
+
                     if (!vapi) {
-                        vapi = new Vapi(VAPI_PUBLIC_KEY);
-
-                        vapi.on('call-start', () => {
-                            callActive = true;
-                            btn.disabled = false;
-                            btn.textContent = 'End Call';
-                            btn.className = 'call-btn end';
-                            updateStatus('Call active  - speak into your microphone', 'active');
-                            startTimer();
-                        });
-
-                        vapi.on('call-end', () => {
-                            callActive = false;
-                            btn.disabled = false;
-                            btn.textContent = 'Start Call';
-                            btn.className = 'call-btn start';
-                            updateStatus('Call ended. Click "Start Call" to try again.', 'ended');
-                            stopTimer();
-                        });
-
-                        vapi.on('error', (e) => {
-                            console.error('VAPI error:', e);
-                            callActive = false;
-                            btn.disabled = false;
-                            btn.textContent = 'Start Call';
-                            btn.className = 'call-btn start';
-                            updateStatus('Error: ' + (e.message || 'Connection failed. Please try again.'), 'idle');
-                            stopTimer();
-                        });
+                        vapi = new Vapi();
+                        attachVapiHandlers(vapi);
                     }
 
-                    await vapi.start(ASSISTANT_ID);
+                    await vapi.start(call);
                 } catch (err) {
                     console.error('Failed to start call:', err);
                     btn.disabled = false;
                     btn.textContent = 'Start Call';
                     btn.className = 'call-btn start';
-                    updateStatus('Failed to connect. Check microphone permissions and try again.', 'idle');
+                    updateStatus('Failed to connect. ' + (err.message || 'Try again.'), 'idle');
                 }
             } else {
                 vapi.stop();
